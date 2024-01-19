@@ -108,8 +108,6 @@ void UdpClientImpl::handle_send(const boost::system::error_code& error, std::siz
 
 void UdpClientImpl::receive_handler(const boost::system::error_code& error, size_t bytes_transferred) {
     if (error == boost::asio::error::operation_aborted) {
-        // Sending canceled. This means the client was destroyed so do nothing, just return.
-        // There is no way to log anything here because _logger is destroyed as well at this moment.
         return;
     }
 
@@ -156,11 +154,6 @@ void UdpClientImpl::receive_handler(const boost::system::error_code& error, size
 
 void UdpClientImpl::receive_loop() {
 
-    // Schedule the next async receive first.
-    // Passing MSG_PEEK | MSG_TRUNC as a flag results the call to return the received message size keeping the received
-    // message untouched. This provides a way to ensure the buffer we have is big enough to keep the entire message.
-    // Note: null_buffers is useless here because boost always returns 0 bytes length in this case, so use a real buffer
-    // of size 0 to peek the actual message size.
     _socket.async_receive_from(
         boost::asio::buffer(_rcv_buf), _receive_endpoint, MSG_PEEK | MSG_TRUNC,
         std::bind(&UdpClientImpl::receive_handler, this, std::placeholders::_1, std::placeholders::_2));
